@@ -1,0 +1,41 @@
+-名称：安装Java JDK
+用法：操作/setup-java@v3.14.1
+和……一起：
+#要设置的Java版本.采用完整或半个Java版本。请参阅自述文件文件中支持的语法示例
+java版本：#可选择的
+#".java-version"文件的路径。请参阅自述文件文件中支持的语法示例
+java版本文件：#可选
+#Java分发。请参阅自述文件文件中支持的分发列表
+分布：
+#包类型(jdk，jre，jdk+fx，jre+fx)
+java-package：#可选，默认值为jdk
+#包的体系结构(默认为动作运行器的体系结构)
+体系结构：#可选
+#压缩JDK所在路径
+jdkFile：#optional
+#如果希望操作检查满足版本规范的最新可用版本，请设置此选项
+最新检查：#可选
+#pom.xml文件中distributionManagement存储库的ID.默认值为"GitHub"
+server-id：#可选，默认为GitHub
+#用于对Apache Maven存储库进行身份验证的用户名的环境变量名。默认值为$GitHub_ACTOR
+服务器用户名：#可选，默认值为GitHub_ACTOR
+#用于对Apache Maven存储库进行身份验证的密码或令牌的环境变量名。默认值为$GitHub_TOKEN
+服务器密码：#可选，默认值为GitHub_TOKEN
+#写入settings.xml文件的路径，默认为~/.M2
+settings-path：#optional
+#如果settings.xml文件存在，则覆盖该文件。默认值为“真”。
+覆盖设置：#可选，默认值为true
+#要导入的GPG私钥。 默认值为空字符串。
+gpg-private-key：#可选
+#GPG私钥密码的环境变量名。默认值为$GPG_PASSPHRASE。
+gpg-passphrase：#可选
+#缓存依赖关系的搭建平台名称，可以是“maven”、“gradle”、“sbt”。
+缓存：#可选
+#将作业状态传递到后置作业步骤的解决方法。 此变量不用于手动设置
+作业状态：#可选，默认值为${{job.status}}
+#获取github.com上承载的版本清单(如OpenJDK的微软内部版本)时用于身份验证的令牌。在github.com上运行此操作时，默认值已足够。在GHES上运行时，如果遇到速率限制，您可以为github.com传递个人访问令牌。
+令牌：#可选，默认值为${{github.server_url=='https://github.com'&&github.token||"}}
+#如果不需要默认名称"${distribution}_${java-version}"，则Maven工具链ID的名称。请参阅“高级用法”文件中支持的语法示例
+mvn-toolchain-id：#optional
+#如果不需要默认名称"${distribution}"，请输入Maven工具链供应商的名称。请参阅“高级用法”文件中支持的语法示例
+mvn-toolchain-vendor：#optional
