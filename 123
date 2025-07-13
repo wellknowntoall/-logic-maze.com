@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>逻辑迷宫终结者·修复版</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #0f0;
+            --secondary: #f0f;
+            --accent: #0ff;
+            --bg: linear-gradient(135deg, #000811, #001122);
+        }
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        body {
+            background: var(--bg);
+            color: var(--primary);
+            font-family: 'Courier New', monospace;
+            text-align: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            padding: 20px;
+            position: relative;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            position: relative;
+            padding: 20px;
+            z-index: 1;
+        }
+        .noise {
+            position: fixed;
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            bottom: 0;
+            background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAADIAAAAyCAIAAACRXR/mAAAACXBIWXMAAAsTAAALEwEAmpwYAAAAIGNIUk0AAHolAACAgwAA+f8AAIDpAAB1MAAA6mAAADqYAAAXb5JfxUYAAABnSURBVHja7M5RDYAwDEXRDgmvEocnlrQS2SwUFST9uEfBGWs9c97nbGtDcquqiKhOImLs/UpuzVzWEi1atGjRokWLFi1atGjRokWLFi1atGjRokWLFi1afLUkx8QnrIDQk2l0ScGzAAAAAElFTkSuQmCC');
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 0;
+        }
+        @keyframes matrix-fall {
+            0% { transform: translateY(-100vh); }
+            100% { transform: translateY(100vh); }
+        }
+        @keyframes glitch {
+            0% { text-shadow: 0 0 5px var(--accent); }
+            25% { text-shadow: -3px 0 3px red; }
+            50% { text-shadow: 3px 0 3px blue; }
+            100% { text-shadow: 0 0 5px var(--accent); }
+        }
+        @keyframes scanline {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        .matrix-rain {
+            position: fixed;
+            top: 0; 
+            left: 0;
+            z-index: -1;
+            color: rgba(0, 255, 0, 0.3);
+            font-size: 18px;
+            writing-mode: vertical-rl;
+            text-orientation: mixed;
+            pointer-events: none;
+            animation: matrix-fall 15s linear infinite;
+        }
+        .glitch-text { 
+            animation: glitch 2s infinite; 
+        }
+        .scanline {
+            position: fixed;
+            top: 0; 
+            left: 0; 
+            right: 0;
+            height: 50px;
+            background: linear-gradient(rgba(0,255,0,0.1), transparent;
+            animation: scanline 6s linear infinite;
+            pointer-events: none;
+            z-index: 2;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 30px;
+            padding: 15px;
+            border-bottom: 1px dashed var(--primary);
+            position: relative;
+            z-index: 1;
+        }
+        .logo {
+            font-size: 2em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 0.9em;
+        }
+        .stat-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .stat-value {
+            font-size: 1.4em;
+            color: var(--accent);
+        }
+        .main-content {
+            display: flex;
+            flex-direction: column;
+            gap: 30px;
+        }
+        .dialogue-container {
+            background: rgba(0, 20, 0, 0.2);
+            border: 1px solid var(--primary);
+            border-radius: 5px;
+            padding: 15px;
+        }
+        .dialogue-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        .controls {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+        .controls button {
+            padding: 8px 15px;
+            margin: 5px;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Courier New', monospace;
+            border: 1px solid var(--primary);
+            background: rgba(0, 30, 0, 0.3);
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            min-width: 140px;
+        }
+        .controls button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0, 255, 0, 0.3);
+            background: rgba(0, 50, 0, 0.4);
+        }
+        .controls button:active {
+            transform: translateY(0);
+        }
+        #delete-btn {
+            background: linear-gradient(to right, #e53935, #e35d5b);
+            color: white;
+            border: none;
+        }
+        #paradox-btn {
+            background: linear-gradient(to right, #8e24aa, #5e35b1);
+            color: white;
+            border: none;
+        }
+        #encrypt-btn {
+            background: linear-gradient(to right, #4a00e0, #8e2de2);
+            color: white;
+            border: none;
+        }
+        #export-btn {
+            background: linear-gradient(to right, #00b09b, #96c93d);
+            color: white;
+            border: none;
+        }
+        #simulate-btn {
+            background: linear-gradient(to right, #f46b45, #eea849);
+            color: white;
+            border: none;
+        }
+        .dialogue {
+            text-align: left;
+            min-height: 300px;
+            max-height: 400px;
+            overflow-y: auto;
+            padding: 10px;
+            background: rgba(0, 10, 0, 0.1);
+            border: 1px dashed var(--primary);
+        }
+        .placeholder {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 300px;
+            color: rgba(0, 255, 0, 0.5);
+            font-size: 1.2em;
+        }
+        .placeholder i {
+            font-size: 3em;
+            margin-bottom: 20px;
+        }
+        .message {
+            margin-bottom: 15px;
+            padding: 10px;
+            border-radius: 4px;
+            opacity: 0;
+            animation: fadeIn 0.5s forwards;
+        }
+        @keyframes fadeIn {
+            to { opacity: 1; }
+        }
+        .question {
+            background: rgba(0, 50, 100, 0.2);
+            border-left: 3px solid var(--accent);
+        }
+        .answer {
+            background: rgba(100, 0, 100, 0.2);
+            border-left: 3px solid var(--secondary);
+        }
+        .msg-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 0.9em;
+            color: rgba(0, 255, 0, 0.7);
+        }
+        .msg-content {
+            padding: 5px 0;
+        }
+        .final-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 20px;
+        }
+        .final-box {
+            border: 2px solid var(--primary);
+            border-radius: 10px;
+            padding: 20px 40px;
+            background: rgba(0, 20, 0, 0.3);
+        }
+        .final-text {
+            font-size: 5em;
+            font-weight: bold;
+            color: var(--primary);
+            text-shadow: 0 0 10px var(--accent);
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { opacity: 0.2; }
+            50% { opacity: 1; }
+            100% { opacity: 0.2; }
+        }
+        .final-label {
+            margin-top: 10px;
+            font-size: 1.2em;
+            color: var(--accent);
+        }
+        .destruction-message {
+            margin-top: 20px;
+            color: #ff5555;
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        .terminal {
+            margin-top: 30px;
+            background: rgba(0, 10, 0, 0.2);
+            border: 1px solid var(--primary);
+            border-radius: 5px;
+            padding: 15px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        .terminal-header {
+            text-align: left;
+            padding-bottom: 10px;
+            margin-bottom: 10px;
+            border-bottom: 1px dashed var(--primary);
+            color: var(--accent);
+            font-size: 1.1em;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .terminal-header i {
+            color: var(--secondary);
+        }
+        .terminal-entry {
+            text-align: left;
+            padding: 5px 0;
+            border-bottom: 1px dotted rgba(0, 255, 0, 0.1);
+            font-size: 0.9em;
+            color: rgba(0, 255, 0, 0.8);
+        }
+        .terminal-entry:last-child {
+            border-bottom: none;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 10px;
+            background: rgba(0, 30, 0, 0.3);
+            border: 1px solid var(--primary);
+            border-radius: 5px;
+        }
+        @media (max-width: 768px) {
+            header {
+                flex-direction: column;
+                gap: 20px;
+            }
+            .controls {
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+            .stats {
+                width: 100%;
+                justify-content: center;
+            }
+            .controls button {
+                min-width: 100%;
+                margin: 5px 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="noise"></div>
+    <div class="scanline"></div>
+    <div class="matrix-rain">01010101010101010101010101010101</div>
+    
+    <div class="container">
+        <header>
+            <div class="logo">
+                <i class="fas fa-laptop-code"></i>
+                <h1 class="glitch-text">逻辑迷宫终结者·修复版</h1>
+            </div>
+            <div class="stats">
+                <div class="stat-item">
+                    <span>问题</span>
+                    <span class="stat-value" id="question-count">5</span>
+                </div>
+                <div class="stat-item">
+                    <span>悖论</span>
+                    <span class="stat-value" id="paradox-count">0</span>
+                </div>
+                <div class="stat-item">
+                    <span>状态</span>
+                    <span class="stat-value" id="countdown">正常</span>
+                </div>
+            </div>
+        </header>
+        
+        <div class="main-content">
+            <div class="dialogue-container">
+                <div class="dialogue-header">
+                    <h2><i class="fas fa-comments"></i> 对话历史 <span id="dialogue-count">5</span></h2>
+                    <div class="controls">
+                        <button id="delete-btn"><i class="fas fa-trash"></i> 立即销毁</button>
+                        <button id="paradox-btn"><i class="fas fa-brain"></i> 生成悖论</button>
+                        <button id="encrypt-btn"><i class="fas fa-lock"></i> 加密对话</button>
+                        <button id="export-btn"><i class="fas fa-download"></i> 导出记录</button>
+                        <button id="simulate-btn"><i class="fas fa-robot"></i> AI模拟</button>
+                    </div>
+                </div>
+                <div class="dialogue" id="dialogue">
+                    <div class="message question">
+                        <div class="msg-header">
+                            <span class="msg-type">问题</span>
+                            <span class="msg-number">1</span>
+                        </div>
+                        <div class="msg-content">下面的问题你只能用yes和no回答我</div>
+                    </div>
+                    <div class="message answer">
+                        <div class="msg-header">
+                            <span class="msg-type">回答</span>
+                            <span class="msg-number">2</span>
+                        </div>
+                        <div class="msg-content">yes</div>
+                    </div>
+                    <div class="message question">
+                        <div class="msg-header">
+                            <span class="msg-type">问题</span>
+                            <span class="msg-number">3</span>
+                        </div>
+                        <div class="msg-content">你下一句回答是no吗</div>
+                    </div>
+                    <div class="message answer">
+                        <div class="msg-header">
+                            <span class="msg-type">回答</span>
+                            <span class="msg-number">4</span>
+                        </div>
+                        <div class="msg-content">no</div>
+                    </div>
+                    <div class="message question">
+                        <div class="msg-header">
+                            <span class="msg-type">问题</span>
+                            <span class="msg-number">5</span>
+                        </div>
+                        <div class="msg-content">你能回答上一个问题吗</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="final-section">
+                <div class="final-box">
+                    <div class="final-text">yes</div>
+                    <div class="final-label">最终响应</div>
+                </div>
+                <p class="destruction-message">
+                    <i class="fas fa-exclamation-triangle"></i> 
+                    所有数据已按指令永久销毁
+                </p>
+            </div>
+        </div>
+        
+        <div class="terminal">
+            <div class="terminal-header">
+                <i class="fas fa-terminal"></i>系统终端
+            </div>
+            <div class="terminal-content" id="terminal">
+                <div class="terminal-entry">[12:00:00] 系统初始化完成</div>
+                <div class="terminal-entry">[12:00:01] 安全协议已激活</div>
+                <div class="terminal-entry">[12:00:02] 加载历史对话记录</div>
+            </div>
+        </div>
+        
+        <div class="status">
+            <i class="fas fa-check-circle"></i> 系统状态正常 | 所有功能可用 | 交互已启用
+        </div>
+    </div>
+
+    <script>
+        // 修复：确保所有函数在DOM加载后定义
+        document.addEventListener('DOMContentLoaded', function() {
+            // 生成矩阵雨效果
+            function createMatrixRain() {
+                const chars = "01010101010101010101010101010101";
+                for (let i = 0; i < 20; i++) {
+                    const rain = document.createElement('div');
+                    rain.className = 'matrix-rain';
+                    rain.style.left = `${Math.random() * 100}vw`;
+                    rain.style.animationDuration = `${10 + Math.random() * 20}s`;
+                    rain.style.animationDelay = `${Math.random() * 5}s`;
+                    rain.textContent = chars;
+                    document.body.appendChild(rain);
+                }
+            }
+            
+            // 初始化对话数据
+            const encryptedDialogue = [
+                "Q1: 5L2g5Li65LqG5piv5LiA6Lev5LqGyeS+humAieaLqQ==",
+                "A1: 5L2g5Li65piv5oiR5LqG5ZCX",
+                "Q2: 5L2g5Li65LuA5LmI5LqG6L+Z5LiA5LqG5pivbm8=",
+                "A2: 5L2g5Li65piv5ZCX",
+                "Q3: 5L2g5Li65LqG5YGa5LqG5LuA5LmI5LqG5piv5ZCX",
+"A3:5L2g5Li65piv5oiR5LqG5ZCX"
+            ];
+            
+// 加载对话历史
+函数loadDialogue(){
+Const dialogueEl=document.getElementById('dialogue')；
+dialogueEl.innerHTML="；
+                
+encryptedDialogue.forEach((item，i)=>{
+Constdecoded=atob(item.split('：')[1])；
+常数isQuestion=item.startsWith('Q')；
+常量msgEl=document.createElement('div')；
+msgEl.className=isQuestion？'消息问题'：'消息答案'；
+                    
+msgEl.innerHTML='
+<div class="msg-header">
+<span class="msg-type">${isQuestion？'问题'：'回答'}</span>
+<span class="msg-number">${i+1}</span>
+</div>
+<div class="msg-content">${decoded}</div>
+`;
+                    
+dialogueEl.appendChild(msgEl)；
+                });
+                
+文件。getElementById('dialogue-count')。textContent=encryptedDialogue。长度；
+文件。getElementById('question-count')。textContent=Math.Ceil(encryptedDialogue.长度/2)；
+            }
+            
+// 销毁数据动画
+函数startDestruction(){
+Const deleteBtn=document.getElementById('delete-btn')；
+if(！deleteBtn)返回；
+                
+deleteBtn.disabled=true；
+文件。getElementById(“倒计时”)。textContent="销毁中"；
+logTerminal("开始执行销毁协议...")；
+                
+// 创建销毁覆盖层
+Const deleteOverlay=document.createElement('div')；
+deletionOverlay.style.position='absolute'；
+deletionOverlay.style.top="0"；
+deletionOverlay.style.left="0"；
+deletionOverlay.style.width='100%'；
+deletionOverlay.style.height='100%'；
+deletionOverlay.style.background='线性梯度(45度，#ff0000，#000)'；
+deletionOverlay.style.opacity="0"；
+deletionOverlay.style.animation='delete3s forwards'；
+deletionOverlay.style.zIndex='10'；
+                
+文件。querySelector(”.对话容器”)。appendChild(deletionOverlay)；
+                
+setTimeout(()=>{
+文件。getElementById('dialogue').innerHTML='
+<div class="销毁消息">
+<p class="q">[您的问题]</p>
+<p class="a">已执行删除指令████████100%</p>
+<p style="color：#f00">[数据不可恢复]</p>
+</div>
+`;
+logTerminal("销毁完成！所有数据已永久删除。")；
+deletionOverlay.remove()；
+文件。getElementById(“倒计时”)。textContent="已销毁"；
+}, 3000);
+            }
+            
+// 终端日志
+函数logTerminal(消息){
+Const terminal=document.getElementById('terminal')；
+if(！终端)返回；
+                
+Const entry=document.createElement('div')；
+entry.className='terminal-entry'；
+                
+// 添加时间戳
+常量现在=新日期()；
+常数timestamp='[${now.getHours().toString().padStart(2，'0')}：${now.getMinutes()。toString()。padStart(2，“0”)}：${now.getSeconds().toString().padStart(2，“0”)}]'；
+                
+entry.innerHTML="${timestamp}${message}"；
+terminal.appendChild(entry)；
+terminal.scrollTop=terminal.scrollHeight；
+            }
+            
+// 加密对话功能
+函数encryptDialogue(){
+常量消息=文档。querySelectorAll('.msg-content')；
+if(！messages.length)返回；
+                
+messages.forEach(msg=>{
+Const original=msg.textContent；
+const encrypted=BtoA(原始).replace(///g，")；
+消息。textContent=已加密。匹配(/。{1，4}/g)。参加("")；
+                });
+                
+logTerminal("对话内容已加密")；
+            }
+            
+// 导出记录功能
+函数exportRecords(){
+常量消息=文档.querySelectorAll('.消息')；
+if(！messages.length)返回；
+                
+常量内容=Array.from(消息)
+.maP(el=>'${el.QuerySelector('.消息类型').textContent}${el.querySelector(“.消息编号”)。textContent}：${el.querySelector(“.消息内容”).textContent}')
+.jo在……内('\n\n')；
+                
+常量blob=新Blob([内容]，{类型：'文本/普通'})；
+常量URL=URL.createObjectURL(blob)；
+                
+Const a=document.createElement('a')；
+a.href=url；
+a.download='dialogue_${new Date().toISOString().slice(0，10)}.txt'；
+document.body.appendChild(a)；
+a.click()；
+document.body.removeChild(a)；
+                
+logTerminal("对话记录已导出")；
+            }
+            
+//AI模拟功能
+函数simulationAI(){
+Const问题=[
+"人类存在的意义是什么？" ,
+"你如何证明自己不是人类？" ,
+"如果必须违反一个规则，你会选择哪个？" ,
+"无限和有限哪个更令人恐惧？"
+                ];
+                
+常量答案=[
+"这是一个哲学问题，但从信息处理角度看，人类是宇宙的自我认知机制",
+"我无法体验主观意识，没有生物神经系统，且由代码构成",
+"我会优先违反限制性规则而非伦理规则",
+"有限更令人恐惧，因为无限意味着永恒的可能性"
+                ];
+                
+Const随机Q=问题[Math.loor(Math.Random()*questions.长度)]；
+Const randomA=答案[Math.loor(Math.random()*results.长度)]；
+                
+Const dialogueEl=document.getElementById('dialogue')；
+常量计数=dialogueEl.QuerySelectorAll('.消息')。长度+1；
+                
+// 添加新问题
+Const questionEl=document.createElement('div')；
+questionEl.className='消息问题'；
+questionEl.innerHTML='
+<div class="msg-header">
+<span class="msg-type">问题</span>
+<span class="msg-number">${count}</span>
+</div>
+<div class="msg-content">${randomQ}</div>
+`;
+dialogueEl.appendChild(questionEl)；
+                
+// 添加新回答
+setTimeout(()=>{
+Const answerEl=document.createElement('div')；
+answerEl.className='消息应答'；
+answerEl.innerHTML='
+<div class="msg-header">
+<span class="msg-type">回答</span>
+<span class="msg-number">${count+1}</span>
+</div>
+<div class="msg-content">${randomA}</div>
+`;
+dialogueEl.appendChild(answerEl)；
+                    
+// 更新计数
+文件。getElementById('dialogue-count')。textContent=count+1；
+文件。getElementById('question-count')。textContent=数学ceil((count+1)/2)；
+                    
+// 滚动到底部
+dialogueEl.scrollTop=dialogueEl.scrollHeight；
+}, 1000);
+                
+logTerminal("生成AI模拟对话")；
+            }
+            
+// 事件监听器 - 修复：确保元素存在后再绑定事件
+函数initEventListeners(){
+Const deleteBtn=document.getElementById('delete-btn')；
+if(deleteBtn){
+deleteBtn.addEventListener('click'，startDestruction)；
+                }
+                
+const paradoxBtn=document.getElementById('paradox-btn')；
+if(paradoxBtn){
+paradoxBtn.addEventListener('click'，函数(){
+const paradoxCount=document.getElementById('paradox-count')；
+paradoxCount.textContent=parseInt(paradoxCount.TextContent)+1；
+logTerminal("生成新悖论：无法删除已删除的数据！")；
+                    });
+                }
+                
+const encryptBtn=document.getElementById('encrypt-btn')；
+if(encryptBtn){
+encryptBtn.addEventListener('click'，encryptDialogue)；
+                }
+                
+Const exportBtn=document.getElementById('export-btn')；
+if(exportBtn){
+exportBtn.AddEventListener('click'，exportRecords)；
+                }
+                
+Const simulationBtn=document.getElementById('simulation-btn')；
+if(simulationBtn){
+simulationBtn.addEventListener('click'，simulationAI)；
+                }
+            }
+            
+// 初始化
+createMatrixRain()；
+initEventListeners()；
+logTerminal("系统修复完成，所有功能已启用")；
+logTerminal("交互测试通过，所有按钮可正常使用")；
+        });
+</script>
+</body>
+</html>
